@@ -428,6 +428,24 @@ void setMHZ(float frequency) {
             vTaskDelay(10 / portTICK_PERIOD_MS); // time to settle the antenna signal
         }
 #endif
+#ifdef CAP_CC1101_SW0_PIN
+        // M5Stack Cap CC1101 antenna path (ported from mainline Bruce 1.17): the SP3T switches
+        // are driven by RF_SW0 (a GPIO) and RF_SW1, which is the CC1101's own GDO2 pin - not
+        // routed to the ESP32, so it is forced high/low through IOCFG2. Written every call
+        // because Init() resets IOCFG2. If a band comes out deaf, swap the SW0/IOCFG2 values.
+        if (bruceConfigPins.CC1101_bus.cs == (gpio_num_t)CAP_CC1101_SS_PIN) {
+            static uint8_t capBand = 200; // 200 = unknown, forces a settle delay on first use
+            uint8_t band = frequency < 374 ? 0 : (frequency < 650.5 ? 1 : 2); // 315 / 433 / 868-915
+            pinMode(CAP_CC1101_SW0_PIN, OUTPUT);
+            digitalWrite(CAP_CC1101_SW0_PIN, band == 0 ? LOW : HIGH);
+            // 0x2F = GDO2 forced low, 0x6F = same with the output inverted, i.e. forced high.
+            ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, band == 1 ? 0x2F : 0x6F);
+            if (band != capBand) {
+                capBand = band;
+                vTaskDelay(10 / portTICK_PERIOD_MS); // time to settle the antenna signal
+            }
+        }
+#endif
         ELECHOUSE_cc1101.setMHZ(frequency);
     }
 }
