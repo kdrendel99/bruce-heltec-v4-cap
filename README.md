@@ -1,145 +1,170 @@
-<div align="center">
+# Bruce for Heltec WiFi LoRa 32 V4 + M5Stack Cap CC1101
 
-<img src="assets/banner.svg" alt="Bruce But Better" width="100%">
+Full **Bruce** firmware running **natively on the Heltec's onboard 128×64 OLED**,
+with Sub-GHz driven by an externally-wired **M5Stack Cap CC1101**. Navigated with
+the Heltec's single **PRG** button.
 
-# BRUCE BUT BETTER — ESP32-S3 N16R8
+This is a fork of [Yoursel71/BruceButBetter](https://github.com/Yoursel71/BruceButBetter)
+with one added board target (`heltec-v4-oled`). The upstream README is preserved as
+[`README.BruceButBetter.md`](./README.BruceButBetter.md).
 
-**A hand-built Flipper Zero-style multitool on the ESP32-S3.**
-Downstream fork of the [Bruce](https://github.com/pr3y/Bruce) firmware.
-
-Sub-GHz · NFC/RFID · IR · WiFi/BLE · NRF24 · Si5351 — one device, one binary.
-
-[![Fork of pr3y/Bruce](https://img.shields.io/badge/FORK_OF-pr3y%2FBruce-2ea043?style=for-the-badge&logo=github&logoColor=white)](https://github.com/pr3y/Bruce)
-[![ESP32-S3](https://img.shields.io/badge/ESP32--S3-N16R8-1f6feb?style=for-the-badge&logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32-s3)
-[![AGPL v3](https://img.shields.io/badge/LICENSE-AGPL_v3-8b949e?style=for-the-badge)](./LICENSE)
-
-</div>
+> **Why this exists:** stock Bruce (and the other Heltec fork) only render the full
+> UI on color TFTs — on the Heltec's mono OLED they fall back to a limited status
+> panel + a web emulator. This build renders the *real* Bruce UI on the OLED itself.
 
 ---
 
-> ## ⚠️ VERY EARLY BETA
-> This project is in **very early beta**. Expect bugs, breaking changes, and half-finished
-> features. Nothing here is stable yet — flash it, build it, and use it **at your own risk**.
+## Hardware
 
-> **Legal** — For **authorized** security testing and education only. Unauthorized or malicious
-> use is prohibited. You assume all responsibility. Distributed under AGPL.
-
----
-
-## What is it?
-
-A DIY handheld built on the **ESP32-S3 N16R8** running a custom fork of Bruce. One firmware
-binary drives every chip; modules are detected at runtime, so a missing part just shows a
-"not found" message instead of crashing.
-
-**What's different from upstream Bruce:** a purpose-built DIY board (`ESP-General`), a UI tuned
-for the 1.3" 128×64 mono OLED, and a few extra modules — most notably an **Si5351 signal
-generator** (8 kHz–160 MHz), an NRF24 sniffer, and a hardware self-test that probes the I²C/SPI
-buses and reports every module that answers. Everything else tracks upstream.
-
-<p align="center">
-  <img src="docs/img/build-hero.jpg" width="200" alt="Icon grid main menu">
-  <img src="docs/img/ui-submenu.jpg" width="200" alt="NRF24 submenu list">
-  <img src="docs/img/ui-game.jpg" width="200" alt="Game">
-  <img src="docs/img/ui-qr.jpg" width="200" alt="QR code">
-</p>
-<p align="center"><sub>Screen + button board on a 50×70 mm protoboard: icon grid main menu, a submenu list, a game and a QR code.</sub></p>
-
-## Build one (~$40)
-
-Full parts list, wiring, and assembly: **[DIY build guide →](./docs/BUILD.md)**
-
-| Tier | Parts | Cost |
-|---|---|---|
-| Minimum | ESP32-S3 + OLED + buttons | ~$13 |
-| Recommended | + CC1101 + PN532 + IR + microSD | ~$25 |
-| Full | + 2× NRF24 + Si5351 + battery | ~$40 |
-
-## Flash it
-
-**Easiest — [browser flasher](https://Yoursel71.github.io/BruceButBetter/):** open in desktop
-Chrome/Edge, pick your board, connect the **left USB-C** (UART), click Flash. No toolchain.
-
-**Manual** (grab a `.bin` from [Releases](https://github.com/Yoursel71/BruceButBetter/releases)):
-
-```sh
-esptool.py --chip esp32s3 --port COMx write_flash 0x0 Bruce-esp32-s3-N16R8.bin
-```
-
-> Linux/Mac: use `/dev/ttyACM0` instead of `COMx`.
-
-## Build from source
-
-Needs [PlatformIO](https://platformio.org/).
-
-```sh
-pio run -e esp32-s3-devkitc-1-psram            # build (default: SH1106, 6 buttons)
-pio run -e esp32-s3-devkitc-1-psram -t upload  # build + flash
-pio run -e esp32-s3-devkitc-1-psram-ssd1306    # build for an SSD1306/SSD1315 OLED
-```
-
-The `ESP-General` board drives a 128x64 I2C OLED over the same wiring regardless of panel; pick the
-environment that matches the module and buttons you actually fitted:
-
-| environment | flash | panel | buttons |
-|---|---|---|---|
-| `esp32-s3-devkitc-1` | 8 MB | SH1106 / SSD1106G | 6 |
-| `esp32-s3-devkitc-1-psram` | 16 MB | SH1106 / SSD1106G | 6 — **default** |
-| `esp32-s3-devkitc-1-psram-ssd1306` | 16 MB | SSD1306 / SSD1315 | 6 |
-| `esp32-s3-devkitc-1-psram-ssd1306-4btn` | 16 MB | SSD1306 / SSD1315 | 4 |
-
-The full board wires six buttons (UP/DOWN/LEFT/RIGHT/OK/BACK on GPIO 15/16/38/39/40/41). The
-`-4btn` variant is for builds that only wire UP/DOWN/OK/BACK: it drops LEFT/RIGHT and walks the
-keyboard/menu grid plus the RF-frequency and Karma-channel controls with UP/DOWN instead
-(`-DNO_LR_BUTTONS=1`, which you can add to any other environment too). SH1106 panels need a 132x64
-GRAM with a 2 px column offset; SSD1306/SSD1315 use 128x64 with no offset — the wrong one leaves the
-screen dark. See [`boards/ESP-General/ESP-General.ini`](./boards/ESP-General/ESP-General.ini) and
-[`boards/ESP-General/pins_arduino.h`](./boards/ESP-General/pins_arduino.h) for the full pin map.
-
-Output lands in `.pio/build/esp32-s3-devkitc-1-psram/firmware.bin`. The full upstream board
-matrix (M5Stack, CYD, Lilygo, Marauder …) is ported in too — build any with `pio run -e <env>`.
-See [`boards/`](./boards) for the list and [`docs/BUILD.md`](./docs/BUILD.md) for hardware details.
-
-## What it does
-
-| Domain | Highlights |
+| | |
 |---|---|
-| **WiFi** | AP/scan, beacon spam, deauth, evil portal, sniffer (wardriving needs GPS, which the ESP-General build does not include) |
-| **BLE** | Scan, Bad BLE (Ducky), pairing spam |
-| **Sub-GHz (CC1101)** | Scan/copy, replay, spectrum, jammer |
-| **NFC/RFID (PN532)** | Read/clone/write, NDEF, emulation |
-| **IR** | TV-B-Gone, receive, custom codes |
-| **NRF24** | Mousejack, 2.4G spectrum, jammer |
-| **Si5351** | Signal gen 8 kHz–160 MHz, sweep, AM band |
-| **Bad USB** | Ducky scripts over native USB |
-| **Extras** | JS interpreter, WebUI, file manager, QR, iButton |
+| **Host** | Heltec WiFi LoRa 32 V4 — ESP32-S3**R2** (16 MB flash, **2 MB QSPI** PSRAM), onboard SSD1306 128×64 I²C OLED, single PRG button on GPIO0 |
+| **Radio** | M5Stack Cap CC1101 (SKU U219) — TI CC1101 Sub-GHz (315/433/868/915 MHz) + ST25R3916 NFC, 14-pin Cap-Bus, SPI |
+| **Power** | USB-C (the Cap is fed from the Heltec's 5V header; this assembly is USB-tethered) |
 
-> **Warning** — jammers and deauth are illegal to operate against equipment you don't own in most
-> places. Use only on your own hardware, or where you hold written authorization.
+### Heltec → M5 Cap CC1101 wiring  ← **the important part**
 
-## Contributing
+| M5 Cap pad | Heltec pin | Function |
+|---|---|---|
+| `5V OUT` | 5V (J2-2) | Supply into the Cap's regulator |
+| `GND` | GND (J2-1) | Ground |
+| `SCK` | **GPIO33** | SPI clock |
+| `MOSI` | **GPIO47** | SPI MOSI |
+| `MISO` | **GPIO48** | SPI MISO |
+| `CC CS` | **GPIO39** | **CC1101 chip-select** (see note) |
+| `GDO0` | **GPIO4** | CC1101 GDO0 (RX/TX interrupt) |
+| `RF SW0` | **GPIO38** | Antenna-switch control line 0 |
 
-**Vote on what comes next:** [feature poll](https://github.com/Yoursel71/BruceButBetter/discussions/12). Ideas go in
-[Discussions → Ideas](https://github.com/Yoursel71/BruceButBetter/discussions/categories/ideas).
+Notes:
+- **CC1101 CS is GPIO39.** The Cap's silkscreen swaps the `CC CS` / `NFC CS`
+  labels relative to the schematic; GPIO39 is the real CC1101 select (confirmed by
+  probing the chip's VERSION register, which reads `0x14`).
+- **`RF SW1` is not wired to the Heltec** — it is the CC1101's own `GDO2` pin,
+  internal to the Cap, forced high/low in firmware via the `IOCFG2` register.
+- **OLED (onboard):** I²C `SDA=GPIO17`, `SCL=GPIO18`, `RST=GPIO21`, panel power via
+  **`Vext=GPIO36` (active LOW)** — Vext must be enabled before display init.
+- **Deliberate conflicts disabled:** the stock Heltec build routes GPS to 38/39 and
+  Grove I²C SCL to 4 — all three collide with the Cap, so GPS/Grove are disabled in
+  this build. GPS and the Cap cannot coexist on this wiring.
 
-**Want to help?** Pull requests are welcome, small ones too. Good places to start:
-[good first issue](https://github.com/Yoursel71/BruceButBetter/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and
-[help wanted](https://github.com/Yoursel71/BruceButBetter/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22). Comment on the issue
-first so two people don't work on the same thing. Read [CONTRIBUTING.md](./CONTRIBUTING.md) and
-confirm it compiles with `pio run -e esp32-s3-devkitc-1-psram` before opening a PR.
+---
 
-**Built one?** Post a photo in [Show and tell](https://github.com/Yoursel71/BruceButBetter/discussions/categories/show-and-tell).
+## Software lineage — what we pulled from each project
 
-## Credits
+| Project | What we took |
+|---|---|
+| [pr3y/Bruce](https://github.com/pr3y/Bruce) (mainline) | The base firmware. v1.17 added *"M5Stack CC1101 + ST25R3916 cap support"* — we ported its **Cap antenna-switch block** (drives `RF_SW0` as a GPIO and forces `RF_SW1`/GDO2 via `IOCFG2`, with the 315/433/868-915 band truth table) into `rf_utils.cpp`. |
+| [Unkl3Errl/HeltecFirmware](https://github.com/Unkl3Errl/HeltecFirmware) | A Heltec-V4 Bruce fork. We took the **confirmed Heltec pin constants** (OLED SDA17/SCL18/RST21, Vext36, PRG GPIO0). We did *not* use its architecture — it runs headless and only mirrors the full UI to a web emulator, which is exactly what we wanted to avoid. |
+| [Yoursel71/BruceButBetter](https://github.com/Yoursel71/BruceButBetter) | **The base this repo forks.** It already ported Bruce's full UI to a 128×64 mono OLED via **LovyanGFX** (`Panel_SSD1306` + `TFT_MONOCHROME`) plus a **`UI_COMPACT`** core layout (4×2 icon grid, 4-row lists), and already had the `setBeginEndLogic(true)` SPI fix. Our `heltec-v4-oled` board is derived from its `ESP-General` board template. |
 
-Downstream fork of [**Bruce**](https://github.com/pr3y/Bruce). All upstream credit to
-[@pr3y](https://github.com/pr3y), [@bmorcelli](https://github.com/bmorcelli), and the Bruce
-contributors. Improvements here are meant to flow back upstream.
+---
 
-- Upstream: https://github.com/pr3y/Bruce · Wiki: https://wiki.bruce.computer
+## What this fork adds
 
-## License
+A single new board target, `heltec-v4-oled`:
 
-AGPL — see [LICENSE](./LICENSE).
-</content>
-</invoke>
+- `boards/_boards_json/heltec-v4-oled.json` — ESP32-S3, 16 MB flash, `qio_qspi`
+  (2 MB QSPI PSRAM). **Must not** define `ESP32S3DEVKITC1` — that key already maps
+  to `ESP-General` in the pinouts dispatcher.
+- `boards/heltec-v4-oled/pins_arduino.h` — Heltec OLED + Cap CC1101 pins, `DEVICE_NAME`.
+- `boards/heltec-v4-oled/heltec-v4-oled.ini` — LovyanGFX mono-OLED config retargeted
+  to the Heltec's I²C pins, CC1101 Cap pins + `CAP_CC1101_*` defines, single-button
+  flags, `DISABLE_LORA/GPS/ETHERNET/FM`, `lib_ignore = TFT_eSPI FastLED`.
+- `boards/heltec-v4-oled/interface.cpp` — Vext power-on, I²C bring-up, CC1101 pin
+  seeding + default `rfModule`, and the single-button `InputHandler`.
+- `boards/heltec-v4-oled/ok_button.h` — single PRG-button gesture engine
+  (**tap = advance, hold ≈0.65 s = select, double-tap = back**).
+- `boards/pinouts/pins_arduino.h` — dispatch: `#elif ARDUINO_HELTEC_WIFI_LORA_32_V4`.
+- `src/modules/rf/rf_utils.cpp` — the ported Cap antenna-switch block, gated on
+  `#ifdef CAP_CC1101_SW0_PIN`.
+
+---
+
+## Gotchas worth remembering
+
+- **CC1101 CS = GPIO39** (Cap silkscreen CS labels are swapped vs schematic).
+- **Dedicated SPI bus needs `setBeginEndLogic(true)`.** With a fresh/dedicated bus
+  (no other peripheral holding an active transaction), ELECHOUSE must wrap transfers
+  in a configured `SPISettings` transaction, or MISO reads `0x00` ("CC1101 not
+  found"). BruceButBetter already does this.
+- **`lib_ignore = FastLED`** on ESP32-S3 LTO builds — otherwise the link fails with
+  `dangerous relocation: windowed longcall crosses 1GB boundary` in FastLED. The
+  Heltec has no addressable RGB LED, so FastLED is unused anyway.
+- **`RF_SW1` is GDO2**, not a GPIO — set via the CC1101 `IOCFG2` register
+  (`0x2F` = forced low, `0x6F` = forced high) per band in `setMHZ()`.
+- **`NO_LR_BUTTONS`**: the main icon grid navigates with **UP/DOWN**, not Next/Prev.
+  The single-button "advance" therefore emits `DownPress`.
+- **Vext (GPIO36, active LOW)** powers the OLED — enable it before display init.
+- **R2 silicon → `qio_qspi`.** GPIO33–37 are free general-purpose pins here (unlike
+  N16R8/OPI-PSRAM boards where they belong to PSRAM).
+
+---
+
+## Build & flash
+
+```bash
+# Build
+pio run -e heltec-v4-oled            # or: uvx --from platformio pio run -e heltec-v4-oled
+
+# Flash (board on USB)
+pio run -e heltec-v4-oled -t upload
+```
+
+Toolchain: PlatformIO with the pinned pioarduino platform (see `platformio.ini`).
+
+**macOS note:** the ESP32-S3's native USB re-enumerates between the app port
+(`/dev/cu.usbmodem<serial>`) and the ROM-bootloader port (`/dev/cu.usbmodem1101`)
+when it resets for flashing. If a flash/connect fails, retry on whichever
+`/dev/cu.usbmodem*` is currently present. `--connect-attempts 15` helps.
+
+---
+
+## Using it
+
+**On the device (single PRG button):**
+- **tap** → next item
+- **hold (~0.65 s)** → select / enter
+- **double-tap** → back
+
+The full Bruce UI renders on the OLED: WiFi, BLE, **RF (Sub-GHz / CC1101)**, IR, etc.
+
+**Over USB serial** (115200 baud, open with DTR asserted; `#` prompt):
+```
+help                          # list commands
+rf rx -frequency 433.92       # -> "cc1101 Connection OK"
+rf scan <startHz> <stopHz>    # e.g. rf scan 433000000 434000000
+stopscan                      # exit a running RF op
+```
+Note the Bruce syntax is `rf rx -frequency <MHz>` (flag), not a positional timeout.
+
+**WiFi features caveat:** the ESP32-S3 has one WiFi radio. Launching a WiFi attack
+seizes it and tears down any WiFi-served WebUI, so drive WiFi features from the
+device or the USB serial CLI, not a browser over the device's own AP.
+
+---
+
+## Recreating this from scratch (high level)
+
+1. Clone `Yoursel71/BruceButBetter`.
+2. Add a board `heltec-v4-oled`, copying `boards/ESP-General/` as the template
+   (`.json`, `pins_arduino.h`, `.ini`, `interface.cpp`, `ok_button.h`).
+3. Retarget the display macros to the Heltec OLED: `Panel_SSD1306`, `TFT_MONOCHROME=1`,
+   `UI_COMPACT=1`, `TFT_SDA=17 TFT_SCL=18 TFT_RST=21`, 128×64; power `Vext=36` LOW in
+   `_setup_gpio()` before display init.
+4. Set the CC1101 pins (`SCK33 MISO48 MOSI47 CS39 GDO0=4`) and
+   `CAP_CC1101_SS_PIN=39 / CAP_CC1101_SW0_PIN=38`; port the Cap antenna-switch block
+   from `pr3y/Bruce` v1.17's `rf_utils.cpp` (gated on `CAP_CC1101_SW0_PIN`).
+5. Implement single-button nav: a tap/hold/double-tap gesture → `DownPress` /
+   `SelPress` / `EscPress`.
+6. Register the board in `boards/pinouts/pins_arduino.h`
+   (`#elif ARDUINO_HELTEC_WIFI_LORA_32_V4`).
+7. `lib_ignore = TFT_eSPI` (LovyanGFX replaces it) `FastLED` (longcall link bug).
+8. `pio run -e heltec-v4-oled -t upload`.
+
+## Verification status
+
+- ✅ Builds, flashes, boots.
+- ✅ CC1101 detected: `cc1101 Connection OK` on 433 / 915 / 315 MHz (antenna switch
+  fires per band).
+- ✅ Full Bruce UI renders on the 128×64 OLED; single-button nav works.
+- ⬜ Live RX decode of a real transmitter / TX / RSSI scan — not yet exercised.
