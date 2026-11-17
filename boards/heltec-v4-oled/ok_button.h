@@ -12,7 +12,9 @@ public:
     enum class Action { None, Advance, Select, Back };
     static constexpr uint32_t DebounceMs = 25;
     static constexpr uint32_t HoldMs = 650;
-    static constexpr uint32_t DoubleMs = 320; // max gap between taps for a double
+    static constexpr uint32_t DoubleMs = 200; // max gap between taps for a double (also the
+                                              // per-tap latency before a single tap emits Advance);
+                                              // lower = faster menu cycling, tighter back double-tap
 
     Action update(bool pressed, uint32_t now) {
         // debounce

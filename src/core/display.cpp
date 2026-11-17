@@ -89,7 +89,8 @@ void displayScrollingText(const String &text, Opt_Coord &coord) {
         lastX = coord.x;
         lastY = coord.y;
         offset = 0;
-        nextFrame = now + 1000;
+        nextFrame = now + 350; // start scrolling quickly so the full name is readable fast
+                               // (and the BLE screen-mirror catches it mid-scroll, not frozen truncated)
         return;
     }
     if (static_cast<int>(text.length()) <= coord.size) return;
@@ -104,7 +105,7 @@ void displayScrollingText(const String &text, Opt_Coord &coord) {
     tft.setTextDatum(TL_DATUM);
     tft.setTextColor(coord.fgcolor, coord.bgcolor);
     tft.drawString(window, coord.x, coord.y, 1);
-    nextFrame = now + (offset == 0 ? 1000 : 220);
+    nextFrame = now + (offset == 0 ? 600 : 150); // faster step; brief pause at the wrap point
 #else
     int len = text.length();
     String displayText = text + "        "; // Add spaces for smooth looping
@@ -1194,8 +1195,8 @@ static Opt_Coord drawCompactList(
     int first = index - visible / 2;
     if (first < 0) first = 0;
     if (first + visible > total) first = total - visible;
-    const int labelX = CMENU_X + 12;
-    const int maxChars = (CMENU_W - 18) / LW;
+    const int labelX = CMENU_X + 9; // tighter marker gap -> a couple more chars of label width
+    const int maxChars = (CMENU_W - 12) / LW;
     tft.setTextSize(1);
     tft.setTextDatum(TL_DATUM);
     for (int row = 0; row < visible; ++row) {
